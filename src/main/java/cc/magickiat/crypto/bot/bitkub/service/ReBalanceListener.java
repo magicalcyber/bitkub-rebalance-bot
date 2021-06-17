@@ -1,6 +1,7 @@
 package cc.magickiat.crypto.bot.bitkub.service;
 
 import cc.magickiat.crypto.bot.bitkub.config.BotConfig;
+import cc.magickiat.crypto.bot.bitkub.dto.Balance;
 import cc.magickiat.crypto.bot.bitkub.dto.OrderResponse;
 import cc.magickiat.crypto.bot.bitkub.dto.Trade;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -15,6 +16,7 @@ import org.apache.logging.log4j.Logger;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Map;
 
 public class ReBalanceListener extends WebSocketListener {
     private static final Logger LOGGER = LogManager.getLogger(ReBalanceListener.class.getName());
@@ -86,13 +88,20 @@ public class ReBalanceListener extends WebSocketListener {
 
                 // Test buy
                 OrderResponse orderResponse = callback.placeTestBid(BotConfig.getInstance().getAssetPair(), diffAssetMiddle);
-                LOGGER.info("Order Response: {}", orderResponse.toString());
+                if (orderResponse == null) {
+                    throw new RuntimeException("Problem when buy");
+                }
+                LOGGER.info("Order Buy Response: {}", orderResponse.toString());
 
-                coinAmount = coinAmount.add(totalAmountToBuy);
-                assetAmount = assetAmount.subtract(diffAssetMiddle);
+                Map<String, Balance> balances = callback.getBalances();
+                String assetPair = BotConfig.getInstance().getAssetPair();
+                String[] assets = assetPair.split("_");
+                String asset = assets[0];
+                String coin = assets[1];
 
                 // re-cal coin price
-                coinBalance = coinAmount.multiply(latestPrice);
+                coinAmount = new BigDecimal(asset);
+                coinBalance = new BigDecimal(coin).multiply(latestPrice);
                 showAmount(coinBalance, middlePrice);
                 return;
             }
@@ -106,12 +115,22 @@ public class ReBalanceListener extends WebSocketListener {
                 BigDecimal totalAmountToSell = coinBalance.subtract(middlePrice).divide(latestPrice, RoundingMode.HALF_UP);
                 LOGGER.info("Total coin amount to sell: {}", totalAmountToSell);
 
-                // Make sell
-                coinAmount = coinAmount.subtract(totalAmountToSell);
-                assetAmount = assetAmount.add(totalAmountToSell.multiply(latestPrice));
+                // Test Sell
+                OrderResponse orderResponse = callback.placeTestBid(BotConfig.getInstance().getAssetPair(), totalAmountToSell);
+                if (orderResponse == null) {
+                    throw new RuntimeException("Problem when sell");
+                }
+                LOGGER.info("Order Sell Response: {}", orderResponse.toString());
+
+                Map<String, Balance> balances = callback.getBalances();
+                String assetPair = BotConfig.getInstance().getAssetPair();
+                String[] assets = assetPair.split("_");
+                String asset = assets[0];
+                String coin = assets[1];
 
                 // re-cal coin price
-                coinBalance = coinAmount.multiply(latestPrice);
+                coinAmount = new BigDecimal(asset);
+                coinBalance = new BigDecimal(coin).multiply(latestPrice);
                 showAmount(coinBalance, middlePrice);
             }
         } catch (JsonProcessingException e) {

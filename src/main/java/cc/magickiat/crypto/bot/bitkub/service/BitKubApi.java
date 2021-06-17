@@ -6,6 +6,7 @@ import retrofit2.Call;
 import retrofit2.http.*;
 
 import java.util.Map;
+import java.util.concurrent.Executor;
 
 public interface BitKubApi {
     @GET("api/servertime")
@@ -34,4 +35,18 @@ public interface BitKubApi {
             "content-type: application/json"
     })
     Call<BitKubResponseBody<OrderResponse>> placeBid(@Body BidRequest body);
+
+    @POST("api/market/place-ask/test")
+    @Headers({
+            "accept: application/json",
+            "content-type: application/json"
+    })
+    Call<BitKubResponseBody<OrderResponse>> placeAskTest(@Body AskRequest req);
+
+    @POST("api/market/place-ask")
+    @Headers({
+            "accept: application/json",
+            "content-type: application/json"
+    })
+    Call<BitKubResponseBody<OrderResponse>> placeAsk(@Body AskRequest req);
 }
