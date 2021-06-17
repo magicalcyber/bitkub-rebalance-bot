@@ -118,7 +118,7 @@ public class ReBalanceListener extends WebSocketListener {
                 LOGGER.info("Total coin amount to sell: {}", totalAmountToSell);
 
                 // Test Sell
-                OrderResponse orderResponse = callback.placeTestBid(BotConfig.getInstance().getAssetPair(), totalAmountToSell);
+                OrderResponse orderResponse = callback.placeTestAsk(BotConfig.getInstance().getAssetPair(), totalAmountToSell);
                 if (orderResponse == null) {
                     throw new RuntimeException("Problem when sell");
                 }
