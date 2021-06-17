@@ -1,20 +1,28 @@
 package cc.magickiat.crypto.bot.bitkub.service;
 
+import cc.magickiat.crypto.bot.bitkub.config.BotConfig;
 import cc.magickiat.crypto.bot.bitkub.dto.Balance;
 import cc.magickiat.crypto.bot.bitkub.dto.BitKubRequestBody;
+import cc.magickiat.crypto.bot.bitkub.dto.BitKubResponseBody;
 import cc.magickiat.crypto.bot.bitkub.dto.Ticker;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.WebSocket;
+import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Retrofit;
 import retrofit2.converter.jackson.JacksonConverterFactory;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Map;
 
 public class BitKubService {
 
     private static final String BASE_URL = "https://api.bitkub.com";
+
+    private static final String WEB_SOCKET_STREAM_TRADE = "/websocket-api/market.ticker.";
 
     private Retrofit createNormalRetrofit() {
         OkHttpClient.Builder clientBuilder = createHttpClientBuilder();
@@ -39,13 +47,25 @@ public class BitKubService {
     }
 
     private OkHttpClient.Builder createHttpClientBuilder() {
-//        HttpLoggingInterceptor logging = new HttpLoggingInterceptor();
-//        logging.setLevel(HttpLoggingInterceptor.Level.BODY);
-
         OkHttpClient.Builder client = new OkHttpClient.Builder();
-//        client.addInterceptor(logging);
+        if (BotConfig.getInstance().isEnableBitKubServiceLog()) {
+            HttpLoggingInterceptor logging = new HttpLoggingInterceptor();
+            logging.setLevel(HttpLoggingInterceptor.Level.BODY);
+            client.addInterceptor(logging);
+        }
+
         client.addInterceptor(new ErrorInterceptor());
         return client;
+    }
+
+    public WebSocket getTradeStream(ReBalanceListener listener) {
+        OkHttpClient client = createHttpClientBuilder().build();
+
+        Request request = new Request.Builder()
+                .url(BASE_URL + WEB_SOCKET_STREAM_TRADE + BotConfig.getInstance().getAssetPair())
+                .build();
+
+        return client.newWebSocket(request, listener);
     }
 
     public Long getServerTime() throws IOException {
@@ -62,7 +82,12 @@ public class BitKubService {
         BitKubRequestBody requestBody = new BitKubRequestBody();
         requestBody.setTs(ts);
         requestBody.setSig(HmacService.calculateHmac("{\"ts\":" + ts + "}"));
-        return api.getBalances(requestBody).execute().body().getResult();
+
+        BitKubResponseBody<Map<String, Balance>> body = api.getBalances(requestBody).execute().body();
+        if (body == null) {
+            return Collections.emptyMap();
+        }
+        return body.getResult();
     }
 
     public Map<String, Ticker> getTickers() throws IOException {
