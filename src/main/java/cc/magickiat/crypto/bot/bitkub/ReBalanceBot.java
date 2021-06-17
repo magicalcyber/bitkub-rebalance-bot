@@ -37,7 +37,7 @@ public class ReBalanceBot {
         LOGGER.info("Your asset: {}, balance: {}", asset, balanceAsset.getAvailable());
         LOGGER.info("Your coin: {}, balance: {}", coin, balanceCoin.getAvailable());
 
-        ReBalanceListener listener = new ReBalanceListener(balanceAsset.getAvailable(), balanceCoin.getAvailable());
+        ReBalanceListener listener = new ReBalanceListener(balanceAsset.getAvailable(), balanceCoin.getAvailable(), service);
         WebSocket tradeStream = service.getTradeStream(listener);
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> tradeStream.close(ReBalanceListener.NORMAL_CLOSURE_STATUS, "Bye")));

@@ -1,24 +1,26 @@
 package cc.magickiat.crypto.bot.bitkub.service;
 
 import cc.magickiat.crypto.bot.bitkub.config.BotConfig;
-import cc.magickiat.crypto.bot.bitkub.dto.Balance;
-import cc.magickiat.crypto.bot.bitkub.dto.BitKubRequestBody;
-import cc.magickiat.crypto.bot.bitkub.dto.BitKubResponseBody;
-import cc.magickiat.crypto.bot.bitkub.dto.Ticker;
+import cc.magickiat.crypto.bot.bitkub.dto.*;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.WebSocket;
 import okhttp3.logging.HttpLoggingInterceptor;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import retrofit2.Retrofit;
 import retrofit2.converter.jackson.JacksonConverterFactory;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.Map;
 
 public class BitKubService {
+
+    private static final Logger LOGGER = LogManager.getLogger(BitKubService.class);
 
     private static final String BASE_URL = "https://api.bitkub.com";
 
@@ -86,6 +88,64 @@ public class BitKubService {
         BitKubResponseBody<Map<String, Balance>> body = api.getBalances(requestBody).execute().body();
         if (body == null) {
             return Collections.emptyMap();
+        }
+        return body.getResult();
+    }
+
+    public OrderResponse placeTestBid(String symbol, BigDecimal amt) throws IOException {
+        LOGGER.info(">>> Place BID test");
+        Retrofit securedRetrofit = createSecuredRetrofit();
+        BitKubApi api = securedRetrofit.create(BitKubApi.class);
+
+        Long ts = getServerTime();
+
+
+        Bid bid = new Bid();
+        bid.setSym(symbol.toUpperCase());
+        bid.setAmt(amt);
+        bid.setRat(new BigDecimal("1000"));
+        bid.setTyp("market");
+        bid.setTs(ts);
+
+        ObjectMapper mapper = new ObjectMapper();
+        String sig = mapper.writeValueAsString(bid);
+        LOGGER.debug("SIG = {}", sig);
+
+        BidRequest req = new BidRequest(bid);
+        req.setSig(HmacService.calculateHmac(sig));
+
+        BitKubResponseBody<OrderResponse> body = api.placeBidTest(req).execute().body();
+        if (body == null) {
+            return null;
+        }
+        return body.getResult();
+    }
+
+    public OrderResponse placeBid(String symbol, BigDecimal amt) throws IOException {
+        LOGGER.info(">>> Place real BID");
+        Retrofit securedRetrofit = createSecuredRetrofit();
+        BitKubApi api = securedRetrofit.create(BitKubApi.class);
+
+        Long ts = getServerTime();
+
+
+        Bid bid = new Bid();
+        bid.setSym(symbol.toUpperCase());
+        bid.setAmt(amt);
+        bid.setRat(new BigDecimal("1000"));
+        bid.setTyp("market");
+        bid.setTs(ts);
+
+        ObjectMapper mapper = new ObjectMapper();
+        String sig = mapper.writeValueAsString(bid);
+        LOGGER.debug("SIG = {}", sig);
+
+        BidRequest req = new BidRequest(bid);
+        req.setSig(HmacService.calculateHmac(sig));
+
+        BitKubResponseBody<OrderResponse> body = api.placeBid(req).execute().body();
+        if (body == null) {
+            return null;
         }
         return body.getResult();
     }

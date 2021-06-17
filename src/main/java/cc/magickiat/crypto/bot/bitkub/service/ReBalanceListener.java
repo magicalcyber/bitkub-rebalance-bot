@@ -1,6 +1,7 @@
 package cc.magickiat.crypto.bot.bitkub.service;
 
 import cc.magickiat.crypto.bot.bitkub.config.BotConfig;
+import cc.magickiat.crypto.bot.bitkub.dto.OrderResponse;
 import cc.magickiat.crypto.bot.bitkub.dto.Trade;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -11,6 +12,7 @@ import okhttp3.WebSocketListener;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
@@ -26,10 +28,12 @@ public class ReBalanceListener extends WebSocketListener {
 
     private BigDecimal assetAmount;
     private BigDecimal coinAmount;
+    private BitKubService callback;
 
-    public ReBalanceListener(BigDecimal assetAmount, BigDecimal coinAmount) {
+    public ReBalanceListener(BigDecimal assetAmount, BigDecimal coinAmount, BitKubService service) {
         this.assetAmount = assetAmount;
         this.coinAmount = coinAmount;
+        this.callback = service;
 
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     }
@@ -80,6 +84,10 @@ public class ReBalanceListener extends WebSocketListener {
                 LOGGER.info("Total price to buy coin: {}", diffAssetMiddle.toPlainString());
                 LOGGER.info("Total coin amount to buy: {}", totalAmountToBuy.toPlainString());
 
+                // Test buy
+                OrderResponse orderResponse = callback.placeTestBid(BotConfig.getInstance().getAssetPair(), diffAssetMiddle);
+                LOGGER.info("Order Response: {}", orderResponse.toString());
+
                 coinAmount = coinAmount.add(totalAmountToBuy);
                 assetAmount = assetAmount.subtract(diffAssetMiddle);
 
@@ -108,6 +116,8 @@ public class ReBalanceListener extends WebSocketListener {
             }
         } catch (JsonProcessingException e) {
             LOGGER.error(e.getMessage());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 

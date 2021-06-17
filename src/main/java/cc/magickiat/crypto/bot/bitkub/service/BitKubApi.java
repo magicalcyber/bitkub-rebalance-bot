@@ -1,10 +1,7 @@
 package cc.magickiat.crypto.bot.bitkub.service;
 
 
-import cc.magickiat.crypto.bot.bitkub.dto.Balance;
-import cc.magickiat.crypto.bot.bitkub.dto.BitKubRequestBody;
-import cc.magickiat.crypto.bot.bitkub.dto.BitKubResponseBody;
-import cc.magickiat.crypto.bot.bitkub.dto.Ticker;
+import cc.magickiat.crypto.bot.bitkub.dto.*;
 import retrofit2.Call;
 import retrofit2.http.*;
 
@@ -23,4 +20,18 @@ public interface BitKubApi {
             "content-type: application/json"
     })
     Call<BitKubResponseBody<Map<String, Balance>>> getBalances(@Body BitKubRequestBody body);
+
+    @POST("api/market/place-bid/test")
+    @Headers({
+            "accept: application/json",
+            "content-type: application/json"
+    })
+    Call<BitKubResponseBody<OrderResponse>> placeBidTest(@Body BidRequest body);
+
+    @POST("api/market/place-bid")
+    @Headers({
+            "accept: application/json",
+            "content-type: application/json"
+    })
+    Call<BitKubResponseBody<OrderResponse>> placeBid(@Body BidRequest body);
 }
