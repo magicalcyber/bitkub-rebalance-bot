@@ -100,8 +100,10 @@ public class ReBalanceListener extends WebSocketListener {
                 String coin = assets[1];
 
                 // re-cal coin price
-                coinAmount = new BigDecimal(asset);
-                coinBalance = new BigDecimal(coin).multiply(latestPrice);
+                assetAmount = balances.get(asset).getAvailable();
+                coinAmount = balances.get(coin).getAvailable();
+
+                coinBalance = coinAmount.multiply(latestPrice);
                 showAmount(coinBalance, middlePrice);
                 return;
             }
@@ -129,8 +131,10 @@ public class ReBalanceListener extends WebSocketListener {
                 String coin = assets[1];
 
                 // re-cal coin price
-                coinAmount = new BigDecimal(asset);
-                coinBalance = new BigDecimal(coin).multiply(latestPrice);
+                assetAmount = balances.get(asset).getAvailable();
+                coinAmount = balances.get(coin).getAvailable();
+
+                coinBalance = coinAmount.multiply(latestPrice);
                 showAmount(coinBalance, middlePrice);
             }
         } catch (JsonProcessingException e) {
