@@ -176,6 +176,33 @@ public class BitKubService {
         return body.getResult();
     }
 
+    public OrderResponse placeAsk(String symbol, BigDecimal amt) throws IOException {
+        LOGGER.info(">>> Place BID test");
+        Retrofit securedRetrofit = createSecuredRetrofit();
+        BitKubApi api = securedRetrofit.create(BitKubApi.class);
+
+        Long ts = getServerTime();
+
+        Ask ask = new Ask();
+        ask.setSym(symbol.toUpperCase());
+        ask.setAmt(amt);
+        ask.setRat(new BigDecimal("1000"));
+        ask.setTyp("market");
+        ask.setTs(ts);
+
+        ObjectMapper mapper = new ObjectMapper();
+        String sig = mapper.writeValueAsString(ask);
+        LOGGER.debug("SIG = {}", sig);
+
+        AskRequest req = new AskRequest(ask);
+        req.setSig(HmacService.calculateHmac(sig));
+
+        BitKubResponseBody<OrderResponse> body = api.placeAsk(req).execute().body();
+        if (body == null) {
+            return null;
+        }
+        return body.getResult();
+    }
     public Map<String, Ticker> getTickers() throws IOException {
         Retrofit retrofit = createNormalRetrofit();
         BitKubApi api = retrofit.create(BitKubApi.class);
